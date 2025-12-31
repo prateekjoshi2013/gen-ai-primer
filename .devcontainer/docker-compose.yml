@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  datascience:
+    build: .
+    ports:
+      - "8888:8888"
+      - "6006:6006"
+      - "5000:5000"
+      - "8501:8501"
+    volumes:
+      - ..:/workspaces/gen-ai:cached
+      - pip-cache:/home/vscode/.cache/pip
+      - ~/.ssh:/home/vscode/.ssh:ro
+    environment:
+      - PATH=/opt/conda/envs/myenv/bin:/opt/conda/condabin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - CONDA_DEFAULT_ENV=myenv
+      - CONDA_PREFIX=/opt/conda/envs/myenv
+    command: /bin/bash -c "while true; do sleep 1; done"
+
+volumes:
+  pip-cache:

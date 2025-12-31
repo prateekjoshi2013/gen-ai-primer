@@ -1,0 +1,55 @@
+{
+  "name": "Gen Ai Dev Container",
+  // Reference the Docker Compose file
+  "dockerComposeFile": "docker-compose.yml",
+  // Service to use from the compose file
+  "service": "datascience",
+  // Workspace folder path with variable substitution
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "forwardPorts": [
+    8888,  // Jupyter
+    6006,  // Tensorboard
+    5000,  // MLflow
+    8501   // Streamlit
+  ],
+  "portsAttributes": {
+    "8888": {
+      "label": "Jupyter Lab",
+      "onAutoForward": "notify"
+    },
+    "6006": {
+      "label": "Tensorboard",
+      "onAutoForward": "silent"
+    },
+    "5000": {
+      "label": "MLflow",
+      "onAutoForward": "silent"
+    },
+    "8501": {
+      "label": "Streamlit",
+      "onAutoForward": "silent"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",                   // Python support
+        "ms-toolsai.jupyter",                 // Jupyter Notebooks
+        "ms-azuretools.vscode-docker",       // Docker support
+        "njpwerner.autodocstring",           // Auto-generate docstrings
+        "ms-python.vscode-pylance",          // Python language server
+        "visualstudioexptteam.vscodeintellicode", // AI-assisted development
+        "eamodio.gitlens"                    // GitLens for Git
+      ],
+      "settings": {
+        "python.languageServer": "Pylance",
+        "python.formatting.provider": "black",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "jupyter.askForKernelRestart": false,
+        "jupyter.jupyterServerType": "local"
+      }
+    }
+  },
+  "postCreateCommand": "sudo chown -R vscode:vscode /workspaces"
+}

@@ -1,0 +1,22 @@
+name: myenv
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pandas
+  - numpy
+  - scikit-learn
+  - jupyter
+  - jupyterlab>=4.0
+  - matplotlib
+  - seaborn
+  - black
+  - autopep8
+  - pip
+  - pip:
+    - jupyterlab-lsp
+    - python-lsp-server
+    - pylint
+    - pycodestyle
+
