@@ -12,6 +12,8 @@ services:
       - ..:/workspaces/gen-ai:cached
       - pip-cache:/home/vscode/.cache/pip
       - ~/.ssh:/home/vscode/.ssh:ro
+    env_file:
+      - .env
     environment:
       - PATH=/opt/conda/envs/myenv/bin:/opt/conda/condabin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       - CONDA_DEFAULT_ENV=myenv
