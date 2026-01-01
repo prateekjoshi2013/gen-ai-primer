@@ -46,6 +46,6 @@ RUN conda init bash && \
 
 # Configure git defaults for vscode user
 RUN git config --global init.defaultBranch main && \
-    git config --global core.editor "vi" && \
+    git config --global core.pager cat && \ 
     git config --global user.email "prateekjoshi2013@gmail.com" && \
     git config --global user.name "Prateek"

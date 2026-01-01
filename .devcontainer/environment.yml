@@ -19,6 +19,10 @@ dependencies:
     - python-lsp-server
     - pylint
     - pycodestyle
-    # Example: pip package for tokenization by OpenAI
-    - tiktoken 
+    # pip package for tokenization by OpenAI
+    - tiktoken
+    # pip package for OpenAI API
+    - openai
+    # pip package for Google Generative AI API
+    - google-genai
 
