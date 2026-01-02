@@ -107,3 +107,10 @@ fastapi[standard]
 # uvicorn - Lightning-fast ASGI server for running FastAPI applications
 uvicorn[standard]
 
+# ==============================================================================
+# RAG & VECTOR DATABASES
+# ==============================================================================
+# langchain-community - Community maintained extensions and integrations for LangChain
+langchain-community 
+# pypdf - Library for working with PDF files in Python
+pypdf
