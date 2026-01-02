@@ -19,7 +19,7 @@ def split_documents(docs):
     chunks = text_splitter.split_documents(docs)
     return chunks
 
-def create_embedding_model(chunks):
+def create_embedding_model():
     embedding_model = OpenAIEmbeddings(
         model="text-embedding-3-large"  # Example embedding model
     )
@@ -38,5 +38,5 @@ if __name__ == "__main__":
     print("Loading and processing and indexing documents in Qdrant Vector Database...")
     docs = load_documents()
     chunks = split_documents(docs)
-    embedding_model = create_embedding_model(chunks)
+    embedding_model = create_embedding_model()
     vector_store = create_vector_store(chunks, embedding_model)
