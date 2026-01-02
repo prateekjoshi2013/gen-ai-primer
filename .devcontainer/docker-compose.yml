@@ -4,9 +4,9 @@ services:
   # Docker-init service: Fixes Docker socket permissions for DinD
   docker-init:
     image: alpine:3.20
-    privileged: true  # Required for changing socket permissions
+    privileged: true # Required for changing socket permissions
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # Mount Docker socket
+      - /var/run/docker.sock:/var/run/docker.sock # Mount Docker socket
     command: sh -c "chmod 666 /var/run/docker.sock && sleep 1"
     networks:
       - dev-network
@@ -14,9 +14,9 @@ services:
   # Main development container
   datascience:
     build: .
-    privileged: true  # Required for full Docker functionality
+    privileged: true # Required for full Docker functionality
     cap_add:
-      - SYS_ADMIN  # Additional capabilities for Docker operations
+      - SYS_ADMIN # Additional capabilities for Docker operations
     ports:
       - "8888:8888"
       - "6006:6006"
@@ -25,8 +25,9 @@ services:
     volumes:
       - ..:/workspaces/gen-ai:cached
       - pip-cache:/home/vscode/.cache/pip
+      - huggingface-cache:/home/vscode/.cache/huggingface
       - ~/.ssh:/home/vscode/.ssh:ro
-      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket for DinD
+      - /var/run/docker.sock:/var/run/docker.sock # Docker socket for DinD
     depends_on:
       docker-init:
         condition: service_completed_successfully
@@ -38,15 +39,19 @@ services:
       - PATH=/opt/conda/envs/myenv/bin:/opt/conda/condabin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       - CONDA_DEFAULT_ENV=myenv
       - CONDA_PREFIX=/opt/conda/envs/myenv
-    command: sleep infinity 
+    command: sleep infinity
     deploy:
       resources:
         limits:
-          cpus: '24'      # 24 out of 32 CPUs
-          memory: 64G     # 64GB out of 94GB RAM
+          cpus: '24' # 24 out of 32 CPUs
+          memory: 64G # 64GB out of 94GB RAM
         reservations:
-          cpus: '16'      # Reserve at least 16 CPUs
-          memory: 48G     # Reserve at least 48GB
+          cpus: '16' # Reserve at least 16 CPUs
+          memory: 48G # Reserve at least 48GB
+          devices:
+            - driver: nvidia
+              count: all # Use all available GPUs (gracefully falls back to CPU if unavailable)
+              capabilities: [ gpu ]
     networks:
       - dev-network
 
@@ -80,9 +85,10 @@ services:
 # Named volumes for persistent data storage
 volumes:
   pip-cache:
+  huggingface-cache:
   ollama_data:
 
-# Custom bridge network for inter-container communication
+    # Custom bridge network for inter-container communication
 networks:
   dev-network:
     driver: bridge

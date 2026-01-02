@@ -13,20 +13,33 @@ dependencies:
   - seaborn
   - black
   - autopep8
+  # needed for working with large language models like gemma from hugging face
+  - pytorch::pytorch>=2.6
+  - pytorch::torchvision
+  - pytorch::torchaudio
+  - pytorch::pytorch-cuda=12.4
   - pip
   - pip:
-    - jupyterlab-lsp
-    - python-lsp-server
-    - pylint
-    - pycodestyle
-    # pip package for tokenization by OpenAI
-    - tiktoken
-    # pip package for OpenAI API
-    - openai
-    # pip package for Google Generative AI API
-    - google-genai
-    # fastapi for serving models through APIs
-    - fastapi[standard]
-    # pip package for communicating with Ollama server
-    - ollama
-
+      - jupyterlab-lsp
+      - python-lsp-server
+      - pylint
+      - pycodestyle
+      # pip package for tokenization by OpenAI
+      - tiktoken
+      # pip package for OpenAI API
+      - openai
+      # pip package for Google Generative AI API
+      - google-genai
+      # fastapi for serving models through APIs
+      - fastapi[standard]
+      # pip package for communicating with Ollama server
+      - ollama
+      # pip package for transformer models for running local models from Hugging Face
+      - transformers
+      # pip package for Hugging Face model hub access
+      - huggingface_hub
+      # pip package for efficient attention mechanisms
+      - timm
+      # pip package for accelerated training and 8-bit quantization
+      - accelerate>=0.26.0
+      - bitsandbytes
