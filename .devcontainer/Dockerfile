@@ -12,23 +12,14 @@ RUN apt-get update && apt-get install -y \
     openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy environment file
-COPY environment.yml /tmp/environment.yml
-
-# Create conda environment
-RUN conda env create -f /tmp/environment.yml && \
-    conda clean -afy
-
 # Create vscode user with sudo privileges and docker group
-# Fix docker socket permissions by using the host docker group GID
 RUN useradd -m -s /bin/bash -G sudo vscode && \
     echo "vscode ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/vscode && \
     chmod 0440 /etc/sudoers.d/vscode && \
     usermod -aG docker vscode
 
-# Setup conda and directories
-RUN mkdir -p /home/vscode/.conda && \
-    chown -R vscode:vscode /home/vscode && \
+# Give vscode user ownership of conda installation
+RUN chown -R vscode:vscode /opt/conda && \
     mkdir -p /workspaces && \
     chown -R vscode:vscode /workspaces
 
@@ -42,9 +33,20 @@ ENV PATH="/opt/conda/envs/myenv/bin:$PATH" \
 USER vscode
 WORKDIR /workspaces
 
-# Initialize conda for vscode user - this modifies .bashrc for this user
+# Copy environment file
+COPY --chown=vscode:vscode environment.yml /tmp/environment.yml
+
+# Create conda environment as vscode user
+RUN conda env create -f /tmp/environment.yml && \
+    conda clean -afy
+
+# Initialize conda for vscode user
 RUN conda init bash && \
     echo "conda activate myenv" >> ~/.bashrc
+
+# Create cache directories for vscode user to avoid permission issues
+RUN mkdir -p /home/vscode/.cache/huggingface && \
+    mkdir -p /home/vscode/.cache/pip
 
 # Configure git defaults for vscode user
 RUN git config --global init.defaultBranch main && \
