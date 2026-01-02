@@ -10,5 +10,9 @@ ollama-fastapi:
 	uvicorn ollama_fastapi.server:app --host 0.0.0.0 --port 8000
 ollama-fastapi-dev:
 	uvicorn ollama_fastapi.server:app --host 0.0.0.0 --port 8000 --reload
+hf-fastapi:
+	uvicorn hugging_face.server:app --host 0.0.0.0 --port 8000
+hf-fastapi-dev:
+	uvicorn hugging_face.server:app --host 0.0.0.0 --port 8000 --reload
 
-.PHONY: jupyter tensorboard mlflow streamlit ollama-fastapi ollama-fastapi-dev
+.PHONY: jupyter tensorboard mlflow streamlit ollama-fastapi ollama-fastapi-dev hf-fastapi hf-fastapi-dev
