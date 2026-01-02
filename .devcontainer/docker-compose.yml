@@ -24,8 +24,9 @@ services:
       - "8501:8501"
     volumes:
       - ..:/workspaces/gen-ai:cached
-      - pip-cache:/home/vscode/.cache/pip
-      - huggingface-cache:/home/vscode/.cache/huggingface
+      - pip-cache:/home/vscode/.cache/pip # Pip download cache persists across rebuilds
+      - python-packages:/home/vscode/venv # Virtual environment persists across rebuilds
+      - huggingface-cache:/home/vscode/.cache/huggingface # Model cache persists
       - ~/.ssh:/home/vscode/.ssh:ro
       - /var/run/docker.sock:/var/run/docker.sock # Docker socket for DinD
     depends_on:
@@ -36,9 +37,8 @@ services:
     env_file:
       - .env
     environment:
-      - PATH=/opt/conda/envs/myenv/bin:/opt/conda/condabin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      - CONDA_DEFAULT_ENV=myenv
-      - CONDA_PREFIX=/opt/conda/envs/myenv
+      - PATH=/home/vscode/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - VIRTUAL_ENV=/home/vscode/venv
     command: sleep infinity
     deploy:
       resources:
@@ -82,11 +82,13 @@ services:
     networks:
       - dev-network
 
+
 # Named volumes for persistent data storage
 volumes:
-  pip-cache:
-  huggingface-cache:
-  ollama_data:
+  pip-cache: # Caches downloaded pip packages
+  python-packages: # Persists installed Python packages in venv
+  huggingface-cache: # Caches downloaded Hugging Face models
+  ollama_data: # Persists Ollama models
 
     # Custom bridge network for inter-container communication
 networks:

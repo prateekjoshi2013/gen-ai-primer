@@ -1,7 +1,7 @@
 {
     "editor.formatOnSave": true,
     "editor.formatOnPaste": true,
-    "python.defaultInterpreterPath": "/opt/conda/envs/myenv/bin/python",
+    "python.defaultInterpreterPath": "/home/vscode/venv/bin/python",
     "python.languageServer": "Pylance",
     "jupyter.askForKernelRestart": false,
     "[python]": {
@@ -11,5 +11,7 @@
             "source.organizeImports": "explicit"
         }
     },
-    "black-formatter.args": ["--line-length=100"]
+    "black-formatter.args": [
+        "--line-length=100"
+    ]
 }

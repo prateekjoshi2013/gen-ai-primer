@@ -53,5 +53,5 @@
   },
   // User to run as inside the container
   "remoteUser": "vscode",
-  "postCreateCommand": "sudo chown -R vscode:vscode /workspaces && sudo usermod -aG docker vscode"
+  "postCreateCommand": "sudo chown -R vscode:vscode /workspaces /home/vscode/.cache /home/vscode/venv && sudo usermod -aG docker vscode"
 }

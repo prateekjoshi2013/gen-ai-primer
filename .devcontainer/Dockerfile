@@ -1,4 +1,5 @@
-FROM continuumio/miniconda3:latest
+# Use official Python 3.12 slim image for smaller size
+FROM python:3.12-slim
 
 # Install system dependencies including Docker
 RUN apt-get update && apt-get install -y \
@@ -10,7 +11,10 @@ RUN apt-get update && apt-get install -y \
     wget \
     sudo \
     openssh-client \
-    && rm -rf /var/lib/apt/lists/*
+    locales \
+    && rm -rf /var/lib/apt/lists/* && \
+    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
+    locale-gen
 
 # Create vscode user with sudo privileges and docker group
 RUN useradd -m -s /bin/bash -G sudo vscode && \
@@ -18,37 +22,56 @@ RUN useradd -m -s /bin/bash -G sudo vscode && \
     chmod 0440 /etc/sudoers.d/vscode && \
     usermod -aG docker vscode
 
-# Give vscode user ownership of conda installation
-RUN chown -R vscode:vscode /opt/conda && \
-    mkdir -p /workspaces && \
-    chown -R vscode:vscode /workspaces
-
-# Set environment variables for conda activation
-ENV PATH="/opt/conda/envs/myenv/bin:$PATH" \
-    CONDA_DEFAULT_ENV=myenv \
-    CONDA_PREFIX=/opt/conda/envs/myenv \
-    SHELL=/bin/bash
+# Create workspace directory and set ownership
+RUN mkdir -p /workspaces && \
+    chown -R vscode:vscode /workspaces && \
+    mkdir -p /home/vscode/venv && \
+    chown -R vscode:vscode /home/vscode
 
 # Switch to non-root user for security best practices
 USER vscode
 WORKDIR /workspaces
 
-# Copy environment file
-COPY --chown=vscode:vscode environment.yml /tmp/environment.yml
+# Create virtual environment in user's home directory
+RUN python3 -m venv /home/vscode/venv && \
+    chown -R vscode:vscode /home/vscode/venv
 
-# Create conda environment as vscode user
-RUN conda env create -f /tmp/environment.yml && \
-    conda clean -afy
+# Set environment variables to activate venv automatically
+ENV PATH="/home/vscode/venv/bin:$PATH" \
+    VIRTUAL_ENV="/home/vscode/venv" \
+    SHELL=/bin/bash \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
 
-# Initialize conda for vscode user
-RUN conda init bash && \
-    echo "conda activate myenv" >> ~/.bashrc
+# Upgrade pip, setuptools, and wheel for better package installation
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# Create cache directories for vscode user to avoid permission issues
+# Copy requirements file (from parent directory)
+COPY --chown=vscode:vscode ../requirements.txt /tmp/requirements.txt
+
+# Install Python packages from requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Install oh-my-bash
+# Install oh-my-bash for improved terminal UX
+RUN curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh | bash
+
+
+# Configure oh-my-bash with git branch and venv in prompt
+RUN sed -i 's/OSH_THEME=.*/OSH_THEME="vscode"/' ~/.bashrc && \
+    echo '' >> ~/.bashrc && \
+    echo '# Show virtual environment in prompt' >> ~/.bashrc && \
+    echo 'export VIRTUAL_ENV_DISABLE_PROMPT=0' >> ~/.bashrc && \
+    echo '' >> ~/.bashrc && \
+    echo '# Activate venv automatically' >> ~/.bashrc && \
+    echo 'source /home/vscode/venv/bin/activate' >> ~/.bashrc
+
+# Create cache directories to avoid permission issues
 RUN mkdir -p /home/vscode/.cache/huggingface && \
     mkdir -p /home/vscode/.cache/pip
 
-# Configure git defaults for vscode user
+# Configure git defaults
 RUN git config --global init.defaultBranch main && \
     git config --global core.pager cat && \
     git config --global user.email "prateekjoshi2013@gmail.com" && \

@@ -1,0 +1,109 @@
+# ==============================================================================
+# CORE DATA SCIENCE & ML LIBRARIES
+# ==============================================================================
+
+# pandas - Data manipulation and analysis library for structured data
+pandas
+
+# numpy - Numerical computing library for array operations and linear algebra
+numpy
+
+# scikit-learn - Machine learning library for classical ML algorithms
+scikit-learn
+
+# matplotlib - Plotting library for creating static, animated, and interactive visualizations
+matplotlib
+
+# seaborn - Statistical data visualization library built on matplotlib
+seaborn
+
+# ==============================================================================
+# JUPYTER NOTEBOOK & IDE SUPPORT
+# ==============================================================================
+
+# jupyter - Interactive notebook environment for data science and experimentation
+jupyter
+
+# jupyterlab - Next-generation web-based interface for Project Jupyter
+jupyterlab>=4.0
+
+# jupyterlab-lsp - Language Server Protocol integration for JupyterLab (autocomplete, linting)
+jupyterlab-lsp
+
+# python-lsp-server - Python Language Server for IDE features
+python-lsp-server
+
+# ==============================================================================
+# CODE QUALITY & FORMATTING
+# ==============================================================================
+
+# black - Opinionated Python code formatter for consistent style
+black
+
+# autopep8 - Automatically formats Python code to conform to PEP 8 style guide
+autopep8
+
+# pylint - Python code static checker for finding bugs and enforcing coding standards
+pylint
+
+# pycodestyle - Tool to check Python code against PEP 8 style conventions
+pycodestyle
+
+# ==============================================================================
+# DEEP LEARNING & TRANSFORMERS
+# ==============================================================================
+
+# torch - PyTorch deep learning framework for building neural networks
+torch
+
+# torchvision - Computer vision datasets, transforms, and models for PyTorch
+torchvision
+
+# torchaudio - Audio processing library for PyTorch
+torchaudio
+
+# transformers - Hugging Face library for state-of-the-art NLP models (BERT, GPT, etc.)
+transformers>=4.47.0
+
+# huggingface_hub - Client library for interacting with Hugging Face Hub
+huggingface_hub
+
+# timm - PyTorch Image Models library with pretrained computer vision models
+timm
+
+# accelerate - Library for easy multi-GPU/TPU/mixed precision training
+accelerate>=0.26.0
+
+# bitsandbytes - 8-bit optimizers and quantization for efficient model training
+bitsandbytes
+
+# ==============================================================================
+# TOKENIZATION & TEXT PROCESSING
+# ==============================================================================
+
+# tiktoken - Fast BPE tokenizer library from OpenAI for GPT models
+tiktoken
+
+# ==============================================================================
+# AI API CLIENTS
+# ==============================================================================
+
+# openai - Official Python client for OpenAI API (GPT-4, DALL-E, etc.)
+openai
+
+# google-genai - Google Generative AI API client for Gemini models
+google-genai
+
+# ollama - Python client for Ollama (local LLM server)
+ollama
+
+# ==============================================================================
+# WEB FRAMEWORK & API SERVER
+# ==============================================================================
+
+# fastapi - Modern, fast web framework for building APIs with Python 3.7+ and type hints
+fastapi[standard]
+
+# uvicorn - Lightning-fast ASGI server for running FastAPI applications
+uvicorn[standard]
+
