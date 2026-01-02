@@ -116,5 +116,7 @@ langchain-community
 pypdf
 # Text splitting utilities for LangChain
 langchain-text-splitters 
- # OpenAI integration for LangChain needed for embeddings for RAG
+# OpenAI integration for LangChain needed for embeddings for RAG
 langchain-openai
+# Qdrant vector database integration for LangChain
+langchain-qdrant 
