@@ -4,6 +4,7 @@ from typing import Optional
 from openai import OpenAI
 import requests
 from pydantic import BaseModel, Field
+from os import system
 
 # needs the OPENAI_API_KEY environment variable set
 client = OpenAI()
@@ -14,6 +15,14 @@ class MyOutputFormat(BaseModel):
     content: Optional[str] = Field(None, description="Optional string content of the step")
     tool: Optional[str] = Field(None, description="Optional string only for TOOL and RESULT steps")
     input: Optional[str] = Field(None, description="Optional string only for TOOL steps")
+
+
+def run_command(command: str) -> str:
+    try:
+        output = system(command)
+        return str(output)
+    except Exception as e:
+        return f"Error executing command: {e}"
 
 
 def get_weather(city):
@@ -41,13 +50,14 @@ Rules:
 
 AVAILABLE TOOLS:
 1. get_weather(city: str): returns the current weather information for a specified city as string.
+2. run_command(command: str): executes a command on the host os and returns the result back in string.
 
 Output JSON format:
 {"step": "START" | "PLAN" | "OUTPUT" | "TOOL" | "RESULT", "content": "<CONTENT>"}
 
 IMPORTANT FOR TOOL STEPS:
 - When step is TOOL, you MUST include the tool name in the "tool" field
-- You MUST include the input parameter (city name) in the "content" field
+- You MUST include the input parameter (city name or command) in the "content" field
 - Example: {"step": "TOOL", "tool": "get_weather", "content": "Moscow"}
 
 Example 1:
@@ -72,7 +82,7 @@ RESULT: {"step": "RESULT" , "tool": "get_weather", "content": "Its raining heavi
 PLAN: {"step": "PLAN" ,  "content": "Got the weather details of Delhi" }
 OUTPUT: {"step": "OUTPUT" , "content": "The weather in Delhi today is: Its raining heavily today with temperature around 25°C" }
 """
-tools = {"get_weather": get_weather}
+tools = {"get_weather": get_weather, "run_command": run_command}
 
 
 def main():
@@ -85,16 +95,16 @@ def main():
                 {"role": "user", "content": f"{user_input}"},
             ]
         )
-
         while message_history:
 
             response = client.chat.completions.parse(
-                model="gpt-4o-mini",
+                model="gpt-4o",
                 response_format=MyOutputFormat,
                 messages=message_history,
             )
 
             result = response.choices[0].message.parsed
+            print(f"🏹 {result}")
             if result.step == "START":
                 print(f"🔥 : {result.content}")
                 message_history.append(
@@ -117,6 +127,21 @@ def main():
                                 {
                                     "step": "RESULT",
                                     "tool": "get_weather",
+                                    "content": tool_result,
+                                }
+                            ),
+                        }
+                    )
+                elif result.tool == "run_command":
+                    command = result.content
+                    tool_result = run_command(command)
+                    message_history.append(
+                        {
+                            "role": "assistant",
+                            "content": json.dumps(
+                                {
+                                    "step": "RESULT",
+                                    "tool": "run_command",
                                     "content": tool_result,
                                 }
                             ),
