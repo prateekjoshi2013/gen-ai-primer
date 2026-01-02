@@ -114,3 +114,5 @@ uvicorn[standard]
 langchain-community 
 # pypdf - Library for working with PDF files in Python
 pypdf
+# Text splitting utilities for LangChain
+langchain-text-splitters 
