@@ -27,4 +27,6 @@ dependencies:
     - google-genai
     # fastapi for serving models through APIs
     - fastapi[standard]
+    # pip package for communicating with Ollama server
+    - ollama
 
