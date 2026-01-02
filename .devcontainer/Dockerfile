@@ -19,10 +19,12 @@ COPY environment.yml /tmp/environment.yml
 RUN conda env create -f /tmp/environment.yml && \
     conda clean -afy
 
-# Create vscode user with sudo privileges
+# Create vscode user with sudo privileges and docker group
+# Fix docker socket permissions by using the host docker group GID
 RUN useradd -m -s /bin/bash -G sudo vscode && \
     echo "vscode ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/vscode && \
-    chmod 0440 /etc/sudoers.d/vscode
+    chmod 0440 /etc/sudoers.d/vscode && \
+    usermod -aG docker vscode
 
 # Setup conda and directories
 RUN mkdir -p /home/vscode/.conda && \
@@ -46,6 +48,6 @@ RUN conda init bash && \
 
 # Configure git defaults for vscode user
 RUN git config --global init.defaultBranch main && \
-    git config --global core.pager cat && \ 
+    git config --global core.pager cat && \
     git config --global user.email "prateekjoshi2013@gmail.com" && \
     git config --global user.name "Prateek"
