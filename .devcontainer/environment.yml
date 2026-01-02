@@ -25,4 +25,6 @@ dependencies:
     - openai
     # pip package for Google Generative AI API
     - google-genai
+    # fastapi for serving models through APIs
+    - fastapi[standard]
 
