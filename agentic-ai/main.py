@@ -1,10 +1,19 @@
 # Using openai client to use Gemini via OpenAI-compatible API
 import json
+from typing import Optional
 from openai import OpenAI
 import requests
+from pydantic import BaseModel, Field
 
 # needs the OPENAI_API_KEY environment variable set
 client = OpenAI()
+
+
+class MyOutputFormat(BaseModel):
+    step: str = Field(..., description="One of START, PLAN, OUTPUT, TOOL, RESULT")
+    content: Optional[str] = Field(None, description="Optional string content of the step")
+    tool: Optional[str] = Field(None, description="Optional string only for TOOL and RESULT steps")
+    input: Optional[str] = Field(None, description="Optional string only for TOOL steps")
 
 
 def get_weather(city):
@@ -36,6 +45,11 @@ AVAILABLE TOOLS:
 Output JSON format:
 {"step": "START" | "PLAN" | "OUTPUT" | "TOOL" | "RESULT", "content": "<CONTENT>"}
 
+IMPORTANT FOR TOOL STEPS:
+- When step is TOOL, you MUST include the tool name in the "tool" field
+- You MUST include the input parameter (city name) in the "content" field
+- Example: {"step": "TOOL", "tool": "get_weather", "content": "Moscow"}
+
 Example 1:
 
 START: Hey, Can you solve 2 + 3 * 5 / 10
@@ -53,8 +67,8 @@ PLAN: {"step": "PLAN" , "content": "Seems like user is interested in getting wea
 PLAN: {"step": "PLAN" , "content": "Check if there is a tool available for getting weather details" }
 PLAN: {"step": "PLAN" , "content": "Found one tool : get_weather to get current weather information" }
 PLAN: {"step": "PLAN" , "content": "Call get_weather with the specified city" }
-PLAN: {"step": "TOOL" , "tool": "get_weather", "content": "Delhi" }
-PLAN: {"step": "RESULT" , "tool": "get_weather", "content": "Its raining heavily today with temperature around 25°C" }
+TOOL: {"step": "TOOL" , "tool": "get_weather", "content": "Delhi" }
+RESULT: {"step": "RESULT" , "tool": "get_weather", "content": "Its raining heavily today with temperature around 25°C" }
 PLAN: {"step": "PLAN" ,  "content": "Got the weather details of Delhi" }
 OUTPUT: {"step": "OUTPUT" , "content": "The weather in Delhi today is: Its raining heavily today with temperature around 25°C" }
 """
@@ -73,27 +87,28 @@ def main():
         )
 
         while message_history:
-            
-            response = client.chat.completions.create(
+
+            response = client.chat.completions.parse(
                 model="gpt-4o-mini",
-                response_format={"type": "json_object"},
+                response_format=MyOutputFormat,
                 messages=message_history,
             )
 
-            result = response.choices[0].message.content
-            parsed_result = json.loads(result)
-            if parsed_result["step"] == "START":
-                print(f"🔥 : {parsed_result['content']}")
-                message_history.append({"role": "assistant", "content": result})
-            elif parsed_result["step"] == "PLAN":
-                print(f"🤖 : {parsed_result['content']}")
-                message_history.append({"role": "assistant", "content": result})
-            elif parsed_result["step"] == "TOOL":
-                print(
-                    f"🔧 : Calling tool {parsed_result['tool']} with content: {parsed_result['content']}"
+            result = response.choices[0].message.parsed
+            if result.step == "START":
+                print(f"🔥 : {result.content}")
+                message_history.append(
+                    {"role": "assistant", "content": json.dumps(result.model_dump())}
                 )
-                if parsed_result["tool"] == "get_weather":
-                    city = parsed_result["content"]
+            elif result.step == "PLAN":
+                print(f"🤖 : {result.content}")
+                message_history.append(
+                    {"role": "assistant", "content": json.dumps(result.model_dump())}
+                )
+            elif result.step == "TOOL":
+                print(f"🔧 : Calling tool {result.tool} with content: {result.content}")
+                if result.tool == "get_weather":
+                    city = result.content
                     tool_result = get_weather(city)
                     message_history.append(
                         {
@@ -107,9 +122,16 @@ def main():
                             ),
                         }
                     )
-            elif parsed_result["step"] == "OUTPUT":
-                print(f"✅ : {parsed_result['content']}")
-                message_history.append({"role": "assistant", "content": result})
+                    # Add a user message to prompt the model to continue
+                    message_history.append(
+                        {
+                            "role": "user",
+                            "content": "Continue with the next step.",
+                        }
+                    )
+            elif result.step == "OUTPUT":
+                print(f"✅ : {result.content}")
                 message_history.clear()  # Exit the inner loop to ask new user input
+
 
 main()
