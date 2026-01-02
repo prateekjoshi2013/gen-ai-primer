@@ -2,6 +2,7 @@
 from pathlib import Path
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings
 
 def load_documents():
     pdf_path = Path(__file__).parent / "k8s-ops-book.pdf"
@@ -17,6 +18,14 @@ def split_documents(docs):
     chunks = text_splitter.split_documents(docs)
     return chunks
 
+def create_embedding_model(chunks):
+    embedding_model = OpenAIEmbeddings(
+        model="text-embedding-3-large"  # Example embedding model
+    )
+    return embedding_model
+
 if __name__ == "__main__":
     docs = load_documents()
     chunks = split_documents(docs)
+    embedding_model = create_embedding_model(chunks)
+    
