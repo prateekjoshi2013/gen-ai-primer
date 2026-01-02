@@ -37,7 +37,8 @@
         "ms-python.black-formatter", // Black formatter
         "ms-python.vscode-pylance", // Python language server
         "eamodio.gitlens", // GitLens for Git
-        "ms-azuretools.vscode-containers" // Docker (lazy on Docker files)
+        "ms-azuretools.vscode-containers", // Docker (lazy on Docker files)
+        "Perkovec.emojis" // Emoji support
       ],
       "settings": {
         // Disable extensions that slow down startup
