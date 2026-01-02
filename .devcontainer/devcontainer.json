@@ -35,18 +35,22 @@
       "extensions": [
         "ms-python.python", // Python support
         "ms-python.black-formatter", // Black formatter
-        "ms-toolsai.jupyter", // Jupyter Notebooks
-        "ms-azuretools.vscode-docker", // Docker support
-        "njpwerner.autodocstring", // Auto-generate docstrings
         "ms-python.vscode-pylance", // Python language server
-        "visualstudioexptteam.vscodeintellicode", // AI-assisted development
-        "eamodio.gitlens" // GitLens for Git
+        "eamodio.gitlens", // GitLens for Git
+        "ms-azuretools.vscode-containers" // Docker (lazy on Docker files)
       ],
       "settings": {
+        // Disable extensions that slow down startup
+        "extensions.recommendations.showOnlyOnDemandExtensions": true,
         "jupyter.askForKernelRestart": false,
-        "jupyter.jupyterServerType": "local"
+        "jupyter.jupyterServerType": "local",
+        "terminal.integrated.macOptionIsMeta": true,
+        "terminal.integrated.macOptionClickForcesSelection": true,
+        "terminal.integrated.sendKeybindingsToShell": true
       }
     }
   },
-  "postCreateCommand": "sudo chown -R vscode:vscode /workspaces"
+  // User to run as inside the container
+  "remoteUser": "vscode",
+  "postCreateCommand": "sudo chown -R vscode:vscode /workspaces && sudo usermod -aG docker vscode"
 }
