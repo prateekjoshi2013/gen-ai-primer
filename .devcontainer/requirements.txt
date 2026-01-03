@@ -120,3 +120,5 @@ langchain-text-splitters
 langchain-openai
 # Qdrant vector database integration for LangChain
 langchain-qdrant 
+# rq is a simple Python library for queueing jobs and processing them in the background with workers.
+rq 
