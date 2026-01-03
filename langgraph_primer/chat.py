@@ -1,7 +1,7 @@
 from typing import Annotated
 from typing_extensions import TypedDict
 from langgraph.graph.message import add_messages
-from langgraph.graph import StateGraph
+from langgraph.graph import StateGraph, START, END
 
 
 class State(TypedDict):
@@ -23,5 +23,11 @@ def samplenode(state: State) -> State:
 
 
 graph_builder = StateGraph(State)
-graph_builder.add_node("chatbot_node",chatbot)
+graph_builder.add_node("chatbot_node", chatbot)
 graph_builder.add_node("sample_node", samplenode)
+
+graph_builder.add_edge(START, "chatbot_node")
+graph_builder.add_edge("chatbot_node", "sample_node")
+graph_builder.add_edge("sample_node", END)
+
+graph = graph_builder.compile()
