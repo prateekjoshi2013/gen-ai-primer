@@ -127,3 +127,5 @@ rq
 # =============================================================================
 # langgraph is a visual programming tool for building and deploying AI applications using LangChain.
 langgraph
+# Core LangChain library for building LLM applications
+langchain 
