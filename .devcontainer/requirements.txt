@@ -135,3 +135,7 @@ pymongo
 langgraph-checkpoint-mongodb
 # mem0ai - Persistent memory layer for LangGraph to store and retrieve conversation history and state
 mem0ai
+# Neo4j graph database integration for LangChain
+langchain_neo4j
+# rank-bm25 - BM25 ranking algorithm implementation for information retrieval
+rank-bm25

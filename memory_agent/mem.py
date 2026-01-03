@@ -1,3 +1,4 @@
+from time import time
 from mem0 import Memory
 from openai import OpenAI
 import os
@@ -15,6 +16,14 @@ config = {
         "provider": "qdrant",
         "config": {"host": "qdrant", "port": 6333},
     },
+    "graph_store": {
+        "provider": "neo4j",
+        "config": {
+            "username": os.getenv("NEO4J_USER"),
+            "password": os.getenv("NEO4J_PASSWORD"),
+            "url": os.getenv("NEO4J_CONNECTION_URI"),
+        },
+    },
 }
 
 mem_client = Memory.from_config(config)
@@ -22,12 +31,12 @@ mem_client = Memory.from_config(config)
 
 # needs the OPENAI_API_KEY environment variable set
 client = OpenAI()
-
+user_id="prateek"+str(time())  # Fixed user ID to persist memories per session
 while True:
     user_query = input("Enter your message: ")
     if user_query.lower() == "exit" or user_query.lower() == "e":
         break
-    search_memory = mem_client.search(user_id="prateek", query=user_query)
+    search_memory = mem_client.search(user_id=user_id, query=user_query)
     print("Retrieved Memories:\n", search_memory['results'])
     memories = "\n".join(
         [f"- Memory {i+1}: {mem['memory']}" for i, mem in enumerate(search_memory["results"])]
@@ -51,7 +60,7 @@ while True:
     print("AI:", ai_response)
 
     mem_client.add(
-        user_id="prateek",
+        user_id=user_id,
         messages=[
             {"role": "user", "content": user_query},
             {"role": "assistant", "content": ai_response},
