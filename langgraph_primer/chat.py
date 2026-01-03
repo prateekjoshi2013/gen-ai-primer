@@ -1,4 +1,6 @@
+import json
 from typing import Annotated
+from marshmallow import pprint
 from typing_extensions import TypedDict
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, START, END
@@ -31,3 +33,6 @@ graph_builder.add_edge("chatbot_node", "sample_node")
 graph_builder.add_edge("sample_node", END)
 
 graph = graph_builder.compile()
+
+updated_state = graph.invoke(State({"messages": ["Hi my name is Prateek"]}))
+print("Updated State:", updated_state)
