@@ -133,3 +133,5 @@ langchain
 pymongo 
 # langgraph checkpointing with MongoDB backend
 langgraph-checkpoint-mongodb
+# mem0ai - Persistent memory layer for LangGraph to store and retrieve conversation history and state
+mem0ai
