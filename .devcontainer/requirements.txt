@@ -139,3 +139,5 @@ mem0ai
 langchain_neo4j
 # rank-bm25 - BM25 ranking algorithm implementation for information retrieval
 rank-bm25
+# openai-agents - Framework for building AI agents using llm models
+openai-agents
