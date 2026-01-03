@@ -14,5 +14,8 @@ hf-fastapi:
 	uvicorn hugging_face.server:app --host 0.0.0.0 --port 8000
 hf-fastapi-dev:
 	uvicorn hugging_face.server:app --host 0.0.0.0 --port 8000 --reload
-
-.PHONY: jupyter tensorboard mlflow streamlit ollama-fastapi ollama-fastapi-dev hf-fastapi hf-fastapi-dev
+async-rag-server:
+	python async_rag_server/main.py
+async-rag-server-dev:
+	python async_rag_server/main.py --reload
+.PHONY: jupyter tensorboard mlflow streamlit ollama-fastapi ollama-fastapi-dev hf-fastapi hf-fastapi-dev async-rag-server async-rag-server-dev
