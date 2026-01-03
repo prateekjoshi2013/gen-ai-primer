@@ -122,3 +122,20 @@ langchain-openai
 langchain-qdrant 
 # rq is a simple Python library for queueing jobs and processing them in the background with workers.
 rq 
+# =============================================================================
+# Agentic Workflow Orchestration
+# =============================================================================
+# langgraph is a visual programming tool for building and deploying AI applications using LangChain.
+langgraph
+# Core LangChain library for building LLM applications
+langchain 
+# MongoDB integration for LangGraph checkpointing
+pymongo 
+# langgraph checkpointing with MongoDB backend
+langgraph-checkpoint-mongodb
+# mem0ai - Persistent memory layer for LangGraph to store and retrieve conversation history and state
+mem0ai
+# Neo4j graph database integration for LangChain
+langchain_neo4j
+# rank-bm25 - BM25 ranking algorithm implementation for information retrieval
+rank-bm25
