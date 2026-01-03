@@ -83,6 +83,229 @@ chat_history = memory.get_history(user_id="user123", limit=5)
 ```
 
 
+### Memory Augmentation using Knowledge Graphs
+
+- We can use knowledge graphs like neo4j to give more relationship, hierarchical context along with memory
+- Its really heavy to self host so use the free tier cloud instance
+
+## Cypher Query Basics for Neo4j
+
+Cypher is Neo4j's graph query language for querying and manipulating graph data.
+
+### Basic Patterns
+
+```cypher
+// Nodes: (variable:Label {property: value})
+// Relationships: -[:TYPE]-> or <-[:TYPE]-
+// Patterns: (node1)-[:RELATIONSHIP]->(node2)
+```
+
+### CRUD Operations
+
+#### CREATE - Add nodes and relationships
+
+```cypher
+// Create a node
+CREATE (p:Person {name: "Alice", age: 30})
+
+// Create multiple nodes with relationship
+CREATE (a:Person {name: "Alice"})-[:KNOWS]->(b:Person {name: "Bob"})
+
+// Create relationship between existing nodes
+MATCH (a:Person {name: "Alice"}), (b:Person {name: "Bob"})
+CREATE (a)-[:WORKS_WITH]->(b)
+```
+
+#### MATCH - Find/Query data
+
+```cypher
+// Find all persons
+MATCH (p:Person) RETURN p
+
+// Find specific person
+MATCH (p:Person {name: "Alice"}) RETURN p
+
+// Find relationships
+MATCH (a:Person)-[r:KNOWS]->(b:Person)
+RETURN a.name, type(r), b.name
+
+// Find with WHERE clause
+MATCH (p:Person)
+WHERE p.age > 25
+RETURN p.name, p.age
+```
+
+#### UPDATE - Modify data
+
+```cypher
+// Set property
+MATCH (p:Person {name: "Alice"})
+SET p.age = 31
+RETURN p
+
+// Add new property
+MATCH (p:Person {name: "Alice"})
+SET p.email = "alice@example.com"
+
+// Update multiple properties
+MATCH (p:Person {name: "Alice"})
+SET p += {city: "NYC", country: "USA"}
+```
+
+#### DELETE - Remove data
+
+```cypher
+// Delete relationship only
+MATCH (a:Person {name: "Alice"})-[r:KNOWS]->(b)
+DELETE r
+
+// Delete node (must delete relationships first)
+MATCH (p:Person {name: "Alice"})
+DETACH DELETE p  // DETACH deletes all relationships too
+```
+
+### Common Query Patterns
+
+#### Filtering
+
+```cypher
+// Multiple conditions
+MATCH (p:Person)
+WHERE p.age > 25 AND p.city = "NYC"
+RETURN p
+
+// Pattern matching in WHERE
+MATCH (p:Person)
+WHERE (p)-[:KNOWS]->(:Person {name: "Bob"})
+RETURN p.name
+```
+
+#### Ordering & Limiting
+
+```cypher
+// Sort and limit results
+MATCH (p:Person)
+RETURN p.name, p.age
+ORDER BY p.age DESC
+LIMIT 10
+
+// Skip and limit (pagination)
+MATCH (p:Person)
+RETURN p
+ORDER BY p.name
+SKIP 20 LIMIT 10
+```
+
+#### Aggregation
+
+```cypher
+// Count
+MATCH (p:Person) RETURN count(p)
+
+// Group by and count
+MATCH (p:Person)
+RETURN p.city, count(*) as people_count
+
+// Other aggregations
+MATCH (p:Person)
+RETURN avg(p.age), min(p.age), max(p.age), sum(p.age)
+```
+
+#### Path Finding
+
+```cypher
+// Shortest path
+MATCH path = shortestPath(
+  (a:Person {name: "Alice"})-[*]-(b:Person {name: "Charlie"})
+)
+RETURN path
+
+// Variable-length relationships
+MATCH (a:Person {name: "Alice"})-[:KNOWS*1..3]->(friend)
+RETURN DISTINCT friend.name
+
+// All paths
+MATCH path = (a:Person {name: "Alice"})-[:KNOWS*]-(b:Person)
+RETURN path
+```
+
+### Advanced Examples
+
+#### Graph Traversal
+
+```cypher
+// Friends of friends
+MATCH (me:Person {name: "Alice"})-[:KNOWS]->(friend)-[:KNOWS]->(fof)
+WHERE NOT (me)-[:KNOWS]->(fof) AND me <> fof
+RETURN DISTINCT fof.name
+
+// Recommendation: find books read by similar users
+MATCH (me:User {id: 123})-[:READ]->(b:Book)<-[:READ]-(other:User)
+MATCH (other)-[:READ]->(rec:Book)
+WHERE NOT (me)-[:READ]->(rec)
+RETURN rec.title, count(*) as score
+ORDER BY score DESC
+LIMIT 5
+```
+
+#### WITH Clause (Pipeline Queries)
+
+```cypher
+// Multi-step query
+MATCH (p:Person)
+WITH p, size((p)-[:KNOWS]->()) as friend_count
+WHERE friend_count > 5
+RETURN p.name, friend_count
+ORDER BY friend_count DESC
+```
+
+#### MERGE (Upsert)
+
+```cypher
+// Create if not exists, otherwise match
+MERGE (p:Person {email: "alice@example.com"})
+ON CREATE SET p.created = timestamp(), p.name = "Alice"
+ON MATCH SET p.updated = timestamp()
+RETURN p
+```
+
+### Python Integration with Neo4j
+
+```python
+from neo4j import GraphDatabase
+
+class Neo4jConnection:
+    def __init__(self, uri, user, password):
+        self.driver = GraphDatabase.driver(uri, auth=(user, password))
+    
+    def close(self):
+        self.driver.close()
+    
+    def query(self, cypher_query, parameters=None):
+        with self.driver.session() as session:
+            result = session.run(cypher_query, parameters)
+            return [record.data() for record in result]
+
+# Usage
+conn = Neo4jConnection("bolt://localhost:7687", "neo4j", "password")
+
+# Create
+conn.query("""
+    CREATE (p:Person {name: $name, age: $age})
+""", {"name": "Alice", "age": 30})
+
+# Query with parameters
+results = conn.query("""
+    MATCH (p:Person)
+    WHERE p.age > $min_age
+    RETURN p.name, p.age
+""", {"min_age": 25})
+
+conn.close()
+```
+
+**Key Concept:** Cypher uses **patterns** - nodes and relationships form visual patterns that translate directly to queries.
+
 
 
 
