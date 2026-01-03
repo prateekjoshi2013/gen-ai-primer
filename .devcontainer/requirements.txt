@@ -107,3 +107,18 @@ fastapi[standard]
 # uvicorn - Lightning-fast ASGI server for running FastAPI applications
 uvicorn[standard]
 
+# ==============================================================================
+# RAG & VECTOR DATABASES
+# ==============================================================================
+# langchain-community - Community maintained extensions and integrations for LangChain
+langchain-community 
+# pypdf - Library for working with PDF files in Python
+pypdf
+# Text splitting utilities for LangChain
+langchain-text-splitters 
+# OpenAI integration for LangChain needed for embeddings for RAG
+langchain-openai
+# Qdrant vector database integration for LangChain
+langchain-qdrant 
+# rq is a simple Python library for queueing jobs and processing them in the background with workers.
+rq 
