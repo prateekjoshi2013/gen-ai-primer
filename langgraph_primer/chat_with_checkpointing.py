@@ -7,15 +7,15 @@ from langgraph.graph import StateGraph, START, END
 from langchain.chat_models import init_chat_model
 from langgraph.checkpoint.mongodb import MongoDBSaver
 
-# llm = init_chat_model(
-#     model="mistral:7b",
-#     model_provider="ollama",
-#     base_url="http://ollama:11434",
-# )
 llm = init_chat_model(
-    model="gpt-4.1-mini",
-    model_provider="openai",
+    model="mistral:7b",
+    model_provider="ollama",
+    base_url="http://ollama:11434",
 )
+# llm = init_chat_model(
+#     model="gpt-4.1-mini",
+#     model_provider="openai",
+# )
 
 # Connection string with authentication and correct hostname
 DB_URI = "mongodb://admin:admin@mongodb:27017/devdb?authSource=admin"
@@ -48,9 +48,32 @@ graph_builder.add_edge(START, "chatbot_node")
 graph_builder.add_edge("chatbot_node", "sample_node")
 graph_builder.add_edge("sample_node", END)
 
-config = {"configurable": {"thread_id": "prateek-2"}} # Example configuration for checkpointing this saves all messages under a specific thread_id
+# Example configuration for checkpointing this saves all messages under a specific thread_id
+config = {
+    "configurable": {
+        # thread_id for the entire conversation to maintain context
+        "thread_id": f"prateek-{time()}"
+    }
+}
+# Create MongoDB checkpoint saver once, outside the loop
 with MongoDBSaver.from_conn_string(DB_URI) as checkpointer:
-    graph = graph_builder.compile(checkpointer=checkpointer)
-    updated_state = graph.invoke(State({"messages": ["What is my name ? "]}), config=config)
+    # Compile graph with checkpointer to enable state persistence
+    graph_with_checkpointer = graph_builder.compile(checkpointer=checkpointer)
+    # Infinite loop to continuously accept user input
+    while True:
+        # Prompt user for input message
+        query = input("Enter your message (or 'exit' to quit): 👉 ")
+        # Check if user wants to exit the conversation
+        if query.lower() == "exit":
+            break  # Exit the while loop
 
-print("Updated State:", updated_state)
+        # Stream execution results chunk by chunk as they're generated
+        for chunk in graph_with_checkpointer.stream(
+            # Pass only the new user message, checkpointer loads previous history
+            # stream_mode="values" returns state updates
+            {"messages": [("user", query)]},
+            config,
+            stream_mode="values",
+        ):
+            # Access the last message in the chunk and print it in a formatted way
+            chunk["messages"][-1].pretty_print()
