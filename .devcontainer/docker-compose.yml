@@ -36,6 +36,8 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_healthy
+      valkey:
+        condition: service_healthy
     env_file:
       - .env
     environment:
@@ -100,6 +102,19 @@ services:
       interval: 5s
       timeout: 5s
       retries: 3
+    networks:
+      - dev-network
+
+  # Valkey in-memory data store
+  valkey:
+    image: valkey/valkey:alpine3.23
+    ports:
+      - "6379:6379"  # Valkey port
+    command: valkey-server --requirepass password  # Secure with password
+    healthcheck:
+      test: ["CMD", "valkey-cli", "-a", "password", "ping"]  # Health check with auth
+      interval: 20s
+      retries: 10
     networks:
       - dev-network
 
