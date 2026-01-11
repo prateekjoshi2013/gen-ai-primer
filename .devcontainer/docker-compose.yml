@@ -4,90 +4,235 @@ services:
   # Docker-init service: Fixes Docker socket permissions for DinD
   docker-init:
     image: alpine:3.20
-    privileged: true # Required for changing socket permissions
+    privileged: true
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock # Mount Docker socket
+      - /var/run/docker.sock:/var/run/docker.sock
     command: sh -c "chmod 666 /var/run/docker.sock && sleep 1"
     networks:
       - dev-network
 
-  # Main development container
-  datascience:
-    build: .
-    privileged: true # Required for full Docker functionality
-    cap_add:
-      - SYS_ADMIN # Additional capabilities for Docker operations
-    ports:
-      - "8888:8888"
-      - "6006:6006"
-      - "5000:5000"
-      - "8501:8501"
-    volumes:
-      - ..:/workspaces/gen-ai:cached
-      - pip-cache:/home/vscode/.cache/pip # Pip download cache persists across rebuilds
-      - python-packages:/home/vscode/venv # Virtual environment persists across rebuilds
-      - huggingface-cache:/home/vscode/.cache/huggingface # Model cache persists
-      - ~/.ssh:/home/vscode/.ssh:ro
-      - /var/run/docker.sock:/var/run/docker.sock # Docker socket for DinD
-    depends_on:
-      docker-init:
-        condition: service_completed_successfully
-      ollama:
-        condition: service_healthy
-      qdrant:
-        condition: service_healthy
-      valkey:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-    env_file:
-      - .env
-    environment:
-      - PATH=/home/vscode/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      - VIRTUAL_ENV=/home/vscode/venv
-    command: sleep infinity
-    deploy:
-      resources:
-        limits:
-          cpus: '24' # 24 out of 32 CPUs
-          memory: 64G # 64GB out of 94GB RAM
-        reservations:
-          cpus: '16' # Reserve at least 16 CPUs
-          memory: 48G # Reserve at least 48GB
-          devices:
-            - driver: nvidia
-              count: all # Use all available GPUs (gracefully falls back to CPU if unavailable)
-              capabilities: [ gpu ]
-    networks:
-      - dev-network
-
-  ollama:
+  # Main LLM on GPU
+  ollama-llm:
     image: ollama/ollama:latest
-    restart: unless-stopped
-    ports:
-      - "11434:11434" # API & Web UI port
-    environment:
-      - OLLAMA_KEEP_MODELS=1 # persist model downloads
+    container_name: ollama-llm
+    ports: ["11434:11434"]
     volumes:
-      - ollama_data:/root/.ollama
+      - ollama_llm:/root/.ollama
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              count: all # Use all available GPUs (gracefully falls back to CPU if unavailable)
-              capabilities: [ gpu ]
+              count: 1
+              capabilities: [gpu]
     healthcheck:
-      test: [ "CMD-SHELL", "ollama list | grep -q 'mistral:7b'" ]
+      test: ["CMD", "ollama", "list"]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 5
-      start_period: 15s
-    entrypoint: >
-      /bin/bash -c " ollama serve &  sleep 5 && ollama pull mistral:7b && ollama pull bespoke-minicheck:7b-q3_K_M && ollama pull nomic-embed-text && wait "
+      start_period: 30s
+    restart: unless-stopped
     networks:
       - dev-network
 
+  # Embeddings on CPU
+  ollama-embed:
+    image: ollama/ollama:latest
+    container_name: ollama-embed
+    ports: ["11435:11434"]
+    volumes:
+      - ollama_embed:/root/.ollama
+    environment:
+      - OLLAMA_NUM_GPU=0
+      - OLLAMA_NUM_THREAD=16
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - dev-network
+
+  # Initialize LLM models
+  init-llm:
+    image: ollama/ollama:latest
+    container_name: init-llm
+    depends_on:
+      ollama-llm:
+        condition: service_healthy  # Wait for ollama-llm to be healthy
+    volumes:
+      - ollama_llm:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama-llm:11434
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -x
+        
+        echo "========================================="
+        echo "Initializing LLM models..."
+        echo "========================================="
+        echo "OLLAMA_HOST is: $$OLLAMA_HOST"
+        
+        # Wait for API to be ready
+        echo "Waiting for ollama-llm API..."
+        max_retries=30
+        retry_count=0
+        
+        while [ $$retry_count -lt $$max_retries ]; do
+          echo "Attempt $$((retry_count + 1))/$$max_retries to connect to ollama API..."
+          if ollama list >/dev/null 2>&1; then
+            echo "✓ ollama-llm API is ready"
+            break
+          fi
+          retry_count=$$((retry_count + 1))
+          echo "Waiting for API... ($$retry_count/$$max_retries)"
+          sleep 2
+        done
+        
+        if [ $$retry_count -eq $$max_retries ]; then
+          echo "✗ Failed to connect to ollama-llm API after $$max_retries attempts"
+          exit 1
+        fi
+        
+        # Check if model exists
+        echo ""
+        echo "Checking for qwen2.5:14b..."
+        
+        if ollama list 2>/dev/null | grep -q "qwen2.5:14b"; then
+          echo "✓ qwen2.5:14b already exists"
+          echo "Skipping download..."
+        else
+          echo "Downloading qwen2.5:14b..."
+          echo "This may take 10-20 minutes..."
+          
+          if ollama pull qwen2.5:14b; then
+            echo "✓ Successfully downloaded qwen2.5:14b"
+          else
+            echo "✗ Failed to download qwen2.5:14b"
+          fi
+        fi
+        
+        # Test model
+        echo ""
+        echo "Testing model..."
+        if echo "test" | ollama run qwen2.5:14b >/dev/null 2>&1; then
+          echo "✓ Model test successful"
+        else
+          echo "⚠ Model loaded but test failed"
+        fi
+        
+        echo ""
+        echo "========================================="
+        echo "✓ LLM initialization complete!"
+        echo "========================================="
+        echo ""
+        ollama list
+        
+        # Keep container running for healthcheck verification
+        sleep infinity
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ollama list | grep -q 'qwen2.5:14b' && echo 'Model ready'"]
+      interval: 20s
+      timeout: 10s
+      retries: 30
+      start_period: 600s
+    restart: unless-stopped
+    networks:
+      - dev-network
+
+  # Initialize embedding models
+  init-embed:
+    image: ollama/ollama:latest
+    container_name: init-embed
+    depends_on:
+      ollama-embed:
+        condition: service_healthy  # Wait for ollama-embed to be healthy
+    volumes:
+      - ollama_embed:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama-embed:11434
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -x
+        
+        echo "========================================="
+        echo "Initializing embedding models..."
+        echo "========================================="
+        echo "OLLAMA_HOST is: $$OLLAMA_HOST"
+        
+        # Wait for API to be ready
+        echo "Waiting for ollama-embed API..."
+        max_retries=30
+        retry_count=0
+        
+        while [ $$retry_count -lt $$max_retries ]; do
+          echo "Attempt $$((retry_count + 1))/$$max_retries to connect to ollama API..."
+          if ollama list >/dev/null 2>&1; then
+            echo "✓ ollama-embed API is ready"
+            break
+          fi
+          retry_count=$$((retry_count + 1))
+          echo "Waiting for API... ($$retry_count/$$max_retries)"
+          sleep 2
+        done
+        
+        if [ $$retry_count -eq $$max_retries ]; then
+          echo "✗ Failed to connect to ollama-embed API after $$max_retries attempts"
+          exit 1
+        fi
+        
+        # Check if model exists
+        echo ""
+        echo "Checking for nomic-embed-text..."
+        
+        if ollama list 2>/dev/null | grep -q "nomic-embed-text"; then
+          echo "✓ nomic-embed-text already exists"
+          echo "Skipping download..."
+        else
+          echo "Downloading nomic-embed-text..."
+          
+          if ollama pull nomic-embed-text; then
+            echo "✓ Successfully downloaded nomic-embed-text"
+          else
+            echo "✗ Failed to download nomic-embed-text"
+          fi
+        fi
+        
+        # Test embeddings
+        echo ""
+        echo "Testing embedding model..."
+        if echo "test" | ollama run nomic-embed-text >/dev/null 2>&1; then
+          echo "✓ Embedding test successful"
+        else
+          echo "⚠ Model loaded but test failed"
+        fi
+        
+        echo ""
+        echo "========================================="
+        echo "✓ Embedding initialization complete!"
+        echo "========================================="
+        echo ""
+        ollama list
+        
+        # Keep container running for healthcheck verification
+        sleep infinity
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ollama list | grep -q 'nomic-embed-text' && echo 'Model ready'"]
+      interval: 20s
+      timeout: 10s
+      retries: 30
+      start_period: 600s
+    restart: unless-stopped
+    networks:
+      - dev-network
+
+  # Qdrant vector database
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
@@ -107,6 +252,7 @@ services:
     networks:
       - dev-network
 
+  # MongoDB
   mongodb:
     image: mongo:7
     environment:
@@ -114,14 +260,14 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: admin
       MONGO_INITDB_DATABASE: devdb
     ports:
-      - "27017:27017"  # MongoDB port
+      - "27017:27017"
     healthcheck:
       test: ["CMD", "mongosh", "-u", "admin", "-p", "admin", "--eval", "db.adminCommand('ping')"]
       interval: 20s
       timeout: 5s
       retries: 10
     volumes:
-      - mongodb_data:/data/db  # Persistent data
+      - mongodb_data:/data/db
     networks:
       - dev-network
 
@@ -129,25 +275,85 @@ services:
   valkey:
     image: valkey/valkey:alpine3.23
     ports:
-      - "6379:6379"  # Valkey port
-    command: valkey-server --requirepass password  # Secure with password
+      - "6379:6379"
+    command: valkey-server --requirepass password
     healthcheck:
-      test: ["CMD", "valkey-cli", "-a", "password", "ping"]  # Health check with auth
+      test: ["CMD", "valkey-cli", "-a", "password", "ping"]
       interval: 20s
       retries: 10
     networks:
       - dev-network
 
-# Named volumes for persistent data storage
-volumes:
-  pip-cache: # Caches downloaded pip packages
-  python-packages: # Persists installed Python packages in venv
-  huggingface-cache: # Caches downloaded Hugging Face models
-  ollama_data: # Persists Ollama models
-  qdrant_data: # Persists Qdrant vector database data
-  mongodb_data: # Persists MongoDB data
+  # Main development container
+  datascience:
+    build: .
+    container_name: datascience
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    ports:
+      - "8888:8888"
+      - "6006:6006"
+      - "5000:5000"
+      - "8501:8501"
+    volumes:
+      - ..:/workspaces/gen-ai:cached
+      - pip-cache:/home/vscode/.cache/pip
+      - python-packages:/home/vscode/venv
+      - huggingface-cache:/home/vscode/.cache/huggingface
+      - ~/.ssh:/home/vscode/.ssh:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      docker-init:
+        condition: service_completed_successfully
+      init-llm:
+        condition: service_healthy  # ← CRITICAL: Wait for models to be ready
+      init-embed:
+        condition: service_healthy  # ← CRITICAL: Wait for models to be ready
+      qdrant:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - PATH=/home/vscode/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - VIRTUAL_ENV=/home/vscode/venv
+      - OLLAMA_LLM_HOST=http://ollama-llm:11434
+      - OLLAMA_EMBED_HOST=http://ollama-embed:11434
+      - QDRANT_HOST=http://qdrant:6333
+    command: sleep infinity
+    deploy:
+      resources:
+        limits:
+          cpus: '24'
+          memory: 64G
+        reservations:
+          cpus: '16'
+          memory: 48G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - dev-network
 
-    # Custom bridge network for inter-container communication
+# Named volumes
+volumes:
+  pip-cache:
+  python-packages:
+  huggingface-cache:
+  ollama_llm:
+    driver: local
+  ollama_embed:
+    driver: local
+  qdrant_data:
+    driver: local
+  mongodb_data:
+
+# Network
 networks:
   dev-network:
     driver: bridge

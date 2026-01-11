@@ -10,14 +10,14 @@ config = {
     "llm": {
         "provider": "ollama",
         "config": {
-            "model": "mistral:7b",
-            "ollama_base_url": "http://ollama:11434",
+            "model": "qwen2.5:14b",
+            "ollama_base_url": "http://ollama-llm:11434",
             "temperature": 0.1,  # Lower temperature for more consistent JSON output
         },
     },
     "embedder": {
         "provider": "ollama",
-        "config": {"model": "nomic-embed-text", "ollama_base_url": "http://ollama:11434"},
+        "config": {"model": "nomic-embed-text", "ollama_base_url": "http://ollama-embed:11434"},
     },
     "vector_store": {
         "provider": "qdrant",
@@ -31,7 +31,7 @@ config = {
 }
 
 client = Client(
-    host="http://ollama:11434",
+    host="http://ollama-llm:11434",
 )
 
 mem_client = Memory.from_config(config)
@@ -46,7 +46,7 @@ while True:
         [f"- Memory {i+1}: {mem['memory']}" for i, mem in enumerate(search_memory["results"])]
     )
     response = client.chat(
-        model="mistral:7b",
+        model="qwen2.5:14b",
         messages=[
             {
                 "role": "system",
